@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata" fqn="viewAllOpenOpportunities">
+    <apiVersion>45.0</apiVersion>
+    <isExposed>true</isExposed>
+    <targets>
+        <target>lightning__AppPage</target>
+        <target>lightning__RecordPage</target>
+        <target>lightning__HomePage</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightning__AppPage">
+            <property name="opportunityName" type="String" label="Opportunity Name" />
+        </targetConfig>
+        <targetConfig targets="lightning__RecordPage">
+            <property name="opportunityName" type="String" label="Opportunity Name" />
+        </targetConfig>
+        <targetConfig targets="lightning__HomePage">
+            <property name="opportunityName" type="String" label="Opportunity Name" />
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>
+
+<!-- ViewAllOpenOpportunities.html -->
+<template>
+    <lightning-datatable
+        key-field="id"
+        data={data}
+        columns={columns}
+        onrowaction={handleRowAction}
+        hide-checkbox-column="true"
+        show-row-number-column="true"
+        search-box="true"
+        sorted-by={sortedBy}
+        sorted-direction={sortedDirection}
+        onsort={handleSort}
+        pagination
+    >
+    </lightning-datatable>
+</template>
+
+<!-- ViewAllOpenOpportunities.js -->
+import { LightningElement, api, wire } from 'lwc';
+import { getObjectInfo } from 'lightning/uiObjectInfoApi';
+import OPPORTUNITY_OBJECT from '@salesforce/schema/Opportunity';
+
+export default class ViewAllOpenOpportunities extends LightningElement {
+    @api opportunityName;
+
+    @wire(getObjectInfo, { objectApiName: OPPORTUNITY_OBJECT })
+    objectInfo;
+
+    data = [];
+    columns = [];
+    sortedBy;
+    sortedDirection = 'asc';
+
+    connectedCallback() {
+        // Set columns based on Opportunity object
+        this.columns = this.objectInfo.data.fields.map(field => {
+            return {
+                label: field.label,
+                fieldName: field.apiName
+            }
+        });
+
+        // Remove unnecessary columns
+        let index = this.columns.findIndex(column => column.fieldName === 'OwnerId');
+        if (index > -1) {
+            this.columns.splice(index, 1);
+        }
+    }
+
+    // Retrieve data from server
+    @wire(getObjectInfo, { objectApiName: OPPORTUNITY_OBJECT })
+    wiredOpportunity({ error, data }) {
+        if (data) {
+            const fieldsToQuery = this.columns.map(field => field.fieldName);
+            // Get all open Opportunities
+            const options = {
+                fields: fieldsToQuery,
+                where: {
+                    StageName: { eq: 'Open' },
+                    Name: { like: `%${this.opportunityName}%` }
+                }
+            };
+            const result = data.query(options);
+            if (result.records) {
+                this.data = result.records;
+            }
+        } else if (error) {
+            window.console.error(error);
+        }
+    }
+
+    // Handle sorting
+    handleSort(event) {
+        this.sortedBy = event.detail.fieldName;
+        this.sortedDirection = event.detail.sortDirection;
+    }
+}
