@@ -1,0 +1,23 @@
+<html> 
+<head> 
+   <title>View All Open Opportunities</title> 
+</head> 
+<body> 
+   <h1>View All Open Opportunities</h1> 
+   <!-- LWC Component for viewing all open opportunities --> 
+   <lightning-datatable 
+      data={opportunities} 
+      columns={columns} 
+      key-field="Id" 
+      sorted-by={sortedBy} 
+      sorted-direction={sortedDirection} 
+      onsort={sortData} 
+      show-row-number-column 
+      hide-checkbox-column 
+      show-loading-spinner 
+      row-number-offset={offset} 
+      page-size={pageSize} 
+   > 
+   </lightning-datatable> 
+</body> 
+</html>
